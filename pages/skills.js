@@ -6,7 +6,7 @@ const LEVELS = [0, 1, 2, 3]
 export default function SkillsPage() {
   const [skills, setSkills] = useState([])
 
-  useEffect(() => {
+  const loadSkills = () => {
     const requirementsRaw = localStorage.getItem('requirements')
     if (!requirementsRaw) return
 
@@ -31,6 +31,10 @@ export default function SkillsPage() {
     })
 
     setSkills(mergedSkills)
+  }
+
+  useEffect(() => {
+    loadSkills()
   }, [])
 
   useEffect(() => {
@@ -47,6 +51,9 @@ export default function SkillsPage() {
     <div style={{ padding: 20 }}>
       <NavBar />
       <h2>Навыки сотрудника</h2>
+      <button onClick={loadSkills} style={{ marginBottom: 10 }}>
+        🔄 Обновить навыки
+      </button>
       <table>
         <thead>
           <tr>
