@@ -1,189 +1,247 @@
-import React, { useState, useEffect } from 'react'
-import NavBar from '../components/NavBar' // добавь импорт
-
-const GRADES = ['Jun', 'Mid', 'Sen', 'Lead']
-const LEVELS = [0, 1, 2, 3]
-
-const gradeOrder = { Jun: 0, Mid: 1, Sen: 2, Lead: 3 }
+import { useState, useEffect } from 'react';
+import NavBar from '../components/NavBar';
 
 export default function RequirementsPage() {
-  const [requirements, setRequirements] = useState([])
+  const [departments, setDepartments] = useState([]);
+  const [activeDeptIndex, setActiveDeptIndex] = useState(0);
 
-  // Загрузка из localStorage — один раз
   useEffect(() => {
-    const saved = localStorage.getItem('requirements')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        setRequirements(parsed)
-      } catch (e) {
-        console.error('Ошибка чтения requirements:', e)
-      }
+  const stored = localStorage.getItem('requirementsDepartments');
+  try {
+    const parsed = stored ? JSON.parse(stored) : [];
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      setDepartments(parsed);
     }
-  }, [])
-
-  const sortRequirements = (list) => {
-    return [...list].sort((a, b) => {
-      const ga = gradeOrder[a.grade] ?? 99
-      const gb = gradeOrder[b.grade] ?? 99
-      if (ga !== gb) return ga - gb
-      if (a.level !== b.level) return a.level - b.level
-      if (a.skill !== b.skill) return a.skill.localeCompare(b.skill)
-      return a.required - b.required
-    })
+  } catch (e) {
+    console.error('Ошибка при чтении requirementsDepartments:', e);
   }
+}, []);
 
-  const save = (list) => {
-  localStorage.setItem('requirements', JSON.stringify(list))
-  setRequirements(list)
-}
 
-const sortAndSave = () => {
-  const sorted = sortRequirements(requirements)
-  localStorage.setItem('requirements', JSON.stringify(sorted))
-  setRequirements(sorted)
-}
+  useEffect(() => {
+    localStorage.setItem('requirementsDepartments', JSON.stringify(departments));
+  }, [departments]);
 
-  const addRow = () => {
-    const newRow = {
-      grade: 'Jun',
-      level: 0,
-      skill: '',
-      required: 0,
-      type: 'skill',
+  const addDepartment = () => {
+    const name = prompt('Название нового отдела:');
+    if (!name) return;
+    setDepartments(prev => [...prev, { name, table: [] }]);
+    setActiveDeptIndex(departments.length);
+  };
+
+  const deleteDepartment = (index) => {
+    if (!window.confirm('Удалить этот отдел?')) return;
+    const updated = departments.filter((_, i) => i !== index);
+    setDepartments(updated);
+    if (activeDeptIndex === index) {
+      setActiveDeptIndex(0);
+    } else if (activeDeptIndex > index) {
+      setActiveDeptIndex(prev => prev - 1);
     }
-    const updated = [...requirements, newRow]
-    save(updated)
-  }
-
-  const updateCell = (index, key, value) => {
-    const updated = [...requirements]
-    updated[index][key] = value
-
-    // Автоматически определяем тип: skill или grade
-    const gradeNames = ['Jun', 'Mid', 'Sen', 'Lead']
-    updated[index].type = gradeNames.includes(updated[index].skill) ? 'grade' : 'skill'
-
-    save(updated)
-  }
-
-  const deleteRow = (index) => {
-    const updated = [...requirements]
-    updated.splice(index, 1)
-    save(updated)
-  }
+  };
 
   return (
-    <div style={{ padding: 20, color: '#fff' }}>
-	<NavBar /> {/* 🔹 вставлен компонент навигации */}
+    <div style={{ padding: 20 }}>
+      <NavBar />
+      <h2>🧩 Требования по отделам</h2>
 
-      <h2 style={{ fontWeight: 600, marginBottom: 20 }}>
-        Требования для перехода по грейдам
-      </h2>
-      <table style={{
-        borderCollapse: 'collapse',
-        width: '100%',
-        backgroundColor: '#111',
-        border: '1px solid #444',
-      }}>
-        <thead style={{ backgroundColor: '#1f2937', color: '#f9fafb' }}>
-          <tr>
-            <th style={{ border: '1px solid #444', padding: 8 }}>Грейд</th>
-            <th style={{ border: '1px solid #444', padding: 8 }}>Уровень</th>
-            <th style={{ border: '1px solid #444', padding: 8 }}>Навык</th>
-            <th style={{ border: '1px solid #444', padding: 8 }}>Требуемый уровень</th>
-            <th style={{ border: '1px solid #444', padding: 8 }}></th>
+      {/* Горизонтальный список отделов */}
+      <div
+        style={{
+          display: 'flex',
+          overflowX: 'auto',
+          marginBottom: 20,
+          gap: '10px',
+          paddingBottom: 10,
+        }}
+      >
+        {departments.map((dept, index) => (
+          <div
+            key={index}
+            onClick={() => setActiveDeptIndex(index)}
+            style={{
+              padding: '10px 16px',
+              backgroundColor: index === activeDeptIndex ? '#60a5fa' : '#2a2a2a',
+              color: index === activeDeptIndex ? '#fff' : '#ccc',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10
+            }}
+          >
+            {dept.name}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteDepartment(index);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#f87171',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        <button
+          onClick={addDepartment}
+          style={{
+            padding: '10px 16px',
+            backgroundColor: '#4ade80',
+            color: '#000',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          ➕ Добавить отдел
+        </button>
+      </div>
+
+      {/* Место под таблицу активного отдела — добавим на следующем шаге */}
+      {departments[activeDeptIndex] && (
+        <div>
+          <h3>Таблица: {departments[activeDeptIndex].name}</h3>
+          	<CompetencyMatrix
+  		department={departments[activeDeptIndex]}
+  		update={(updatedTable) => {
+    		const copy = [...departments];
+    		copy[activeDeptIndex].table = updatedTable;
+    		setDepartments(copy);
+  		}}
+		/>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const GRADES = ['Jun', 'Mid', 'Sen', 'Lead'];
+const SHIFTS = ['-1', '', '+1'];
+const COLS = GRADES.flatMap(g => SHIFTS.map(shift => shift ? `${g}${shift}` : g));
+
+function CompetencyMatrix({ department, update }) {
+  const [skillsPool, setSkillsPool] = useState([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('skillsPool');
+    if (stored) setSkillsPool(JSON.parse(stored));
+  }, []);
+
+  const getCategory = (skillName) => {
+    const found = skillsPool.find(s => s.name === skillName);
+    return found?.category || '';
+  };
+
+  const updateCell = (rowIndex, colKey, value) => {
+    const updated = department.table.map((row, i) => {
+      if (i !== rowIndex) return row;
+      const newLevels = { ...row.levels };
+      if (value === '') {
+        delete newLevels[colKey];
+      } else {
+        newLevels[colKey] = parseInt(value);
+      }
+      return { ...row, levels: newLevels };
+    });
+    update(updated);
+  };
+
+  const updateSkill = (rowIndex, newSkill) => {
+    const updated = department.table.map((row, i) =>
+      i === rowIndex ? { ...row, skill: newSkill } : row
+    );
+    update(updated);
+  };
+
+  const addRow = () => {
+    update([...department.table, { skill: '', levels: {} }]);
+  };
+
+  const deleteRow = (rowIndex) => {
+    update(department.table.filter((_, i) => i !== rowIndex));
+  };
+
+  return (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+        <thead>
+          <tr style={{ backgroundColor: '#333' }}>
+            <th style={thStyle}>#</th>
+            <th style={thStyle}>Компетенция</th>
+            <th style={thStyle}>Категория</th>
+            {COLS.map(col => (
+              <th key={col} style={thStyle}>{col}</th>
+            ))}
+            <th style={thStyle}></th>
           </tr>
         </thead>
         <tbody>
-          {requirements.map((row, index) => (
-            <tr key={index}>
-              <td style={{ border: '1px solid #333', padding: 6 }}>
+          {department.table.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              <td style={tdStyle}>{rowIndex + 1}</td>
+              <td style={tdStyle}>
                 <select
-                  value={row.grade}
-                  onChange={(e) => updateCell(index, 'grade', e.target.value)}
-                  style={{ width: '100%' }}
-                >
-                  {GRADES.map((g) => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
-              </td>
-              <td style={{ border: '1px solid #333', padding: 6 }}>
-                <select
-                  value={row.level}
-                  onChange={(e) => updateCell(index, 'level', parseInt(e.target.value))}
-                  style={{ width: '100%' }}
-                >
-                  {LEVELS.map((l) => (
-                    <option key={l} value={l}>{l}</option>
-                  ))}
-                </select>
-              </td>
-              <td style={{ border: '1px solid #333', padding: 6 }}>
-                <input
                   value={row.skill}
-                  onChange={(e) => updateCell(index, 'skill', e.target.value)}
-                  style={{ width: '100%' }}
-                />
-              </td>
-              <td style={{ border: '1px solid #333', padding: 6 }}>
-                <select
-                  value={row.required}
-                  onChange={(e) => updateCell(index, 'required', parseInt(e.target.value))}
+                  onChange={e => updateSkill(rowIndex, e.target.value)}
                   style={{ width: '100%' }}
                 >
-                  {LEVELS.map((l) => (
-                    <option key={l} value={l}>{l}</option>
+                  <option value="">— выберите —</option>
+                  {skillsPool.map((s, i) => (
+                    <option key={i} value={s.name}>{s.name}</option>
                   ))}
                 </select>
               </td>
-              <td style={{ border: '1px solid #333', padding: 6 }}>
-                <button
-                  onClick={() => deleteRow(index)}
-                  style={{
-                    background: '#444',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '4px 10px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Удалить
-                </button>
+              <td style={tdStyle}>{getCategory(row.skill)}</td>
+              {COLS.map(col => (
+                <td key={col} style={tdStyle}>
+                  <input
+                    type="number"
+                    min={1}
+                    max={3}
+                    value={row.levels?.[col] ?? ''}
+                    onChange={e => updateCell(rowIndex, col, e.target.value)}
+                    style={{ width: 40, textAlign: 'center' }}
+                  />
+                </td>
+              ))}
+              <td style={tdStyle}>
+                <button onClick={() => deleteRow(rowIndex)}>🗑</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-
-      <button
-        onClick={addRow}
-        style={{
-          marginTop: 16,
-          backgroundColor: '#374151',
-          color: '#fff',
-          padding: '8px 12px',
-          border: 'none',
-          borderRadius: 4,
-          cursor: 'pointer',
-        }}
-      >
-        ➕ Добавить требование
+      <button onClick={addRow} style={{ marginTop: 10 }}>
+        ➕ Добавить компетенцию
       </button>
-	<button
-    	onClick={sortAndSave}
-    	style={{
-      	backgroundColor: '#2563eb',
-      	color: '#fff',
-      	padding: '8px 12px',
-      	border: 'none',
-      	borderRadius: 4,
-      	cursor: 'pointer',
-    	}}
-  	>
-   	 🔃 Сортировать таблицу
-  	</button>
     </div>
-  )
+  );
 }
+
+const thStyle = {
+  padding: '8px',
+  backgroundColor: '#2a2a2a',
+  color: '#fff',
+  border: '1px solid #444'
+};
+
+const tdStyle = {
+  padding: '6px',
+  border: '1px solid #444',
+  textAlign: 'center',
+  backgroundColor: '#1e1e1e',
+  color: '#fff'
+};
+
+
+
+
+

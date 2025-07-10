@@ -1,79 +1,81 @@
-import React, { useEffect, useState } from 'react'
-import NavBar from '../components/NavBar'
+import React, { useEffect, useState } from 'react';
+import NavBar from '../components/NavBar';
 
-const LEVELS = [0, 1, 2, 3]
+const LEVELS = [0, 1, 2, 3];
 
 export default function SkillsPage() {
-  const [skills, setSkills] = useState([])
+  const [skills, setSkills] = useState([]);
+  const [pool, setPool] = useState([]);
 
-  const loadSkills = () => {
-    const requirementsRaw = localStorage.getItem('requirements')
-    if (!requirementsRaw) return
+  // 1. Загрузка из localStorage
+  useEffect(() => {
+  const poolRaw = localStorage.getItem('skillsPool');
+  const savedRaw = localStorage.getItem('skills');
 
-    const requirements = JSON.parse(requirementsRaw)
-    const uniqueSkills = [
-      ...new Set(
-        requirements
-          .filter((r) => r.type === 'skill') // исключаем грейды
-          .map((r) => r.skill)
-      ),
-    ]
+  try {
+    const poolParsed = poolRaw ? JSON.parse(poolRaw) : [];
+    const savedParsed = savedRaw ? JSON.parse(savedRaw) : [];
 
-    const saved = localStorage.getItem('skills')
-    const savedSkills = saved ? JSON.parse(saved) : []
-
-    const mergedSkills = uniqueSkills.map((name) => {
-      const existing = savedSkills.find((s) => s.name === name)
+    const merged = poolParsed.map(skill => {
+      const existing = savedParsed.find(s => s.name === skill.name);
       return {
-        name,
-        level: existing ? existing.level : 0,
-      }
-    })
+        name: skill.name,
+        category: skill.category,
+        level: typeof existing?.level === 'number' ? existing.level : 0
+      };
+    });
 
-    setSkills(mergedSkills)
+    if (merged.length > 0) setSkills(merged);
+    setPool(poolParsed);
+  } catch (e) {
+    console.error('Ошибка при загрузке навыков:', e);
   }
+}, []);
 
-  useEffect(() => {
-    loadSkills()
-  }, [])
 
+  // 2. Сохраняем при изменениях
   useEffect(() => {
-    localStorage.setItem('skills', JSON.stringify(skills))
-  }, [skills])
+  if (skills.length > 0) {
+    const toSave = skills.map(({ name, level }) => ({ name, level }));
+    localStorage.setItem('skills', JSON.stringify(toSave));
+  }
+}, [skills]);
+
 
   const updateSkill = (index, level) => {
-    const updated = [...skills]
-    updated[index].level = level
-    setSkills(updated)
-  }
+    const updated = [...skills];
+    updated[index].level = level;
+    setSkills(updated);
+  };
 
   return (
     <div style={{ padding: 20 }}>
       <NavBar />
       <h2>Навыки сотрудника</h2>
-      <button onClick={loadSkills} style={{ marginBottom: 10 }}>
-        🔄 Обновить навыки
-      </button>
-      <table>
+
+      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
         <thead>
-          <tr>
-            <th>Навык</th>
-            <th>Уровень</th>
+          <tr style={{ backgroundColor: '#333' }}>
+            <th style={thStyle}>№</th>
+            <th style={thStyle}>Навык</th>
+            <th style={thStyle}>Категория</th>
+            <th style={thStyle}>Уровень</th>
           </tr>
         </thead>
         <tbody>
           {skills.map((skill, index) => (
             <tr key={index}>
-              <td>{skill.name}</td>
-              <td>
+              <td style={tdStyle}>{index + 1}</td>
+              <td style={tdStyle}>{skill.name}</td>
+              <td style={tdStyle}>{skill.category}</td>
+              <td style={tdStyle}>
                 <select
                   value={skill.level}
-                  onChange={(e) => updateSkill(index, parseInt(e.target.value))}
+                  onChange={e => updateSkill(index, parseInt(e.target.value))}
+                  style={{ padding: 4 }}
                 >
-                  {LEVELS.map((lvl) => (
-                    <option key={lvl} value={lvl}>
-                      {lvl}
-                    </option>
+                  {LEVELS.map(lvl => (
+                    <option key={lvl} value={lvl}>{lvl}</option>
                   ))}
                 </select>
               </td>
@@ -82,5 +84,20 @@ export default function SkillsPage() {
         </tbody>
       </table>
     </div>
-  )
+  );
 }
+
+const thStyle = {
+  padding: '8px',
+  backgroundColor: '#2a2a2a',
+  color: '#fff',
+  border: '1px solid #444',
+  textAlign: 'left'
+};
+
+const tdStyle = {
+  padding: '6px',
+  border: '1px solid #444',
+  backgroundColor: '#1e1e1e',
+  color: '#fff'
+};

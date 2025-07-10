@@ -4,20 +4,23 @@ const NavBar = () => {
   return (
     <nav style={{
       display: 'flex',
-      gap: 16,
+      gap: 20,
       padding: '12px 20px',
       backgroundColor: '#1f2937',
       borderBottom: '1px solid #374151',
       marginBottom: 24,
     }}>
-      <Link href="/skills">
-        <button style={buttonStyle}>Навыки</button>
+      <Link href="/skill-pool">
+        <button style={buttonStyle}>Пул скиллов</button>
       </Link>
       <Link href="/requirements">
         <button style={buttonStyle}>Требования</button>
       </Link>
-      <Link href="/tree">
-        <button style={buttonStyle}>Древо</button>
+      <Link href="/skills">
+        <button style={buttonStyle}>Навыки сотрудника</button>
+      </Link>
+      <Link href="/flow">
+        <button style={buttonStyle}>Грейды</button>
       </Link>
     </nav>
   )
